@@ -23,3 +23,31 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build | tee build.log
           exit ${PIPESTATUS[0]}
+
+  ipa:
+    name: Unsigned IPA (for Sideloadly / AltStore)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build for iPhone (unsigned)
+        run: |
+          xcodebuild \
+            -project SensorLive.xcodeproj \
+            -scheme SensorLive \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | tail -20
+          exit ${PIPESTATUS[0]}
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/SensorLive.app Payload/
+          zip -qry SensorLive.ipa Payload
+          ls -la SensorLive.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SensorLive-ipa
+          path: SensorLive.ipa
